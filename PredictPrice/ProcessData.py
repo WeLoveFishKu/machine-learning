@@ -2,10 +2,10 @@ import glob
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
-from datetime import datetime, timedelta
+from datetime import datetime
 from sklearn.preprocessing import StandardScaler
 
-class processdata:
+class ProcessDataFunctions:
     def __init__(self):
         pass
 
@@ -144,13 +144,40 @@ class processdata:
         scaled_data = pd.DataFrame(temp_dict)
 
         return (scaled_data, store_scalers)
-
-    def revert_scaled_data(self):
-        pass
     
-process = processdata()
-data = pd.read_csv('FishPrice.csv').drop(columns='Unnamed: 0')
-fixed_data = process.fix_all_provinces_anomalies(data)
+    def slice_dataset(self, target_data, feature_data, split_index):
+        """Slices the target and feature data to create training and testing data for both the target and feature data
+        Args:
+        target_data - contains the target data used for training
+        feature_data - contains the features data
+        split_index - the number of data contained in the training data
 
-scaled_data, store_scalers = process.scale_data(fixed_data)
+        Returns:
+        test_feature - contains the first split_index target data
+        train_feature - contains the first split_index target data
+        test_target - contains the final split_index target data
+        test_feature - contains the final split_index target data
+        """
+        # Get the train set 
+        train_target = target_data[:split_index]
+        train_feature = feature_data[:split_index]
+        # Get the validation set
+        test_target = target_data[split_index:]
+        test_feature = feature_data[split_index:]
 
+        return (train_target, train_feature, test_target, test_feature)
+    
+    def prepare_dataset(self, scaled_data, split_index, fish_type):
+        provinces = scaled_data['Provinsi'].unique()
+        train_price, train_date, test_price, test_date = np.array([]), np.array([], dtype='datetime64'), np.array([]), np.array([], dtype='datetime64')
+        for province in provinces:
+            data_provinsi = scaled_data.loc[scaled_data['Provinsi'] == province, ['Date', fish_type]]
+            price_data = data_provinsi[fish_type].values
+            date_data = data_provinsi['Date'].values
+            temp_train_price, temp_train_date, temp_test_price, temp_test_date = self.slice_dataset(price_data, date_data, split_index)
+            train_price = np.concatenate((train_price, temp_train_price))
+            train_date = np.concatenate((train_date, temp_train_date))
+            test_price = np.concatenate((test_price, temp_test_price))
+            test_date = np.concatenate((test_date, temp_test_date))
+        
+        return (train_price, train_date, test_price, test_date)

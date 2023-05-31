@@ -1,14 +1,12 @@
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-class model:
+class ModelFunctions:
     def __init__(self):
         pass
 
-    def plot_series(self, x, y, format="-", start=0, end=None, 
-                    title=None, xlabel=None, ylabel=None, legend=None ):
+    def plot_series(self, x, y, format="-", start=0, end=None, title=None, xlabel=None, ylabel=None, legend=None ):
         """ Visualizes time series data
         Args:
         x (array of int) - contains values for the x-axis
@@ -59,24 +57,6 @@ class model:
         
         return dataset
 
-    def model_forecast(self, model, series, window_size, batch_size):
-        """Uses an input model to generate predictions on data windows
-        Args:
-        model (TF Keras Model) - model that accepts data windows
-        series (array of float) - contains the values of the time series
-        window_size (int) - the number of time steps to include in the window
-        batch_size (int) - the batch size
-
-        Returns:
-        forecast (numpy array) - array containing predictions
-        """
-        dataset = tf.data.Dataset.from_tensor_slices(series) # Generate a TF Dataset from the series values
-        dataset = dataset.window(window_size, shift=1, drop_remainder=True) # Window the data but only take those with the specified size
-        dataset = dataset.flat_map(lambda w: w.batch(window_size)) # Flatten the windows by putting its elements in a single batch
-        dataset = dataset.batch(batch_size).prefetch(1) # Create batches of windows
-        forecast = model.predict(dataset) # Get predictions on the entire dataset
-        
-        return forecast
 
     def prepare_dataset(self, target_data, feature_data, split_index):
         """Slices the target and feature data to create training and testing data for both the target and feature data
@@ -167,12 +147,29 @@ class model:
 
         return model
 
-    def predict_using_training_data(self, model, train_dataset, data_train):
-        predictions = model.predict(train_dataset)
-        plt.plot(data_train)
-        plt.plot(predictions)
-        plt.legend(['Data', 'Prediction'])
-        plt.show()
+    def develop_model(self, train_traget, window_size, batch_size, shuffle_buffer_size, learning_rate, epochs):
+        train_dataset = self.windowed_dataset(train_traget, window_size, batch_size, shuffle_buffer_size)
+        model = self.create_model(window_size)
+        model = self.model_fitting(model, learning_rate, epochs, train_dataset)
+   
+        return model
 
-        return
-    
+    def model_forecast(self, model, series, window_size, batch_size, scaler):
+        """Uses an input model to generate predictions on data windows
+        Args:
+        model (TF Keras Model) - model that accepts data windows
+        series (array of float) - contains the values of the time series
+        window_size (int) - the number of time steps to include in the window
+        batch_size (int) - the batch size
+
+        Returns:
+        forecast (numpy array) - array containing predictions
+        """
+        dataset = tf.data.Dataset.from_tensor_slices(series) # Generate a TF Dataset from the series values
+        dataset = dataset.window(window_size, shift=1, drop_remainder=True) # Window the data but only take those with the specified size
+        dataset = dataset.flat_map(lambda w: w.batch(window_size)) # Flatten the windows by putting its elements in a single batch
+        dataset = dataset.batch(batch_size).prefetch(1) # Create batches of windows
+        forecast = model.predict(dataset) # Get predictions on the entire dataset
+        forecast = scaler.inverse_transform(forecast)
+        
+        return forecast
