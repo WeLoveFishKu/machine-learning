@@ -20,7 +20,6 @@ class ScrapeDataFunctions:
             monthName = date.strftime("%B")[:3]
             year = date.year
             final_dates.append(f'{dayName} {monthName} {angkaTgl} {year}')
-
         self.start_date_year = dates[0].year
         self.today_date_year = dates[1].year
         self.start_date_month = f'0{dates[0].month}' if len(str(dates[0].month)) == 1 else dates[0].month
@@ -29,6 +28,7 @@ class ScrapeDataFunctions:
         self.today_date_word = final_dates[1]
 
     def scrape_data(self):
+        """Scrapes the Badan Pangan Nasional website to get reliable informations on fish prices in Indonesia"""
         options = Options()
         options.add_argument("start-maximized")
         webdriver_path = './chromedriver'
@@ -58,7 +58,7 @@ class ScrapeDataFunctions:
                     WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.CSS_SELECTOR, "table")))
                     table_html = WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CSS_SELECTOR, "table"))).get_attribute("outerHTML")
                     df = pd.read_html(table_html)[0]
-                    df.to_csv(f'./DataHargaIkan_{province}.csv')
+                    df.to_csv(f'./DataHargaIkan_{province}.csv', index=False)
                     break
                 except:
                     time.sleep(10)

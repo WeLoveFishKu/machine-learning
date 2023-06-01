@@ -25,7 +25,6 @@ class ModelFunctions:
                 plt.plot(x[start:end], y_curr[start:end], format)
             else:
                 plt.plot(x[start:end], y[start:end], format)
-
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         if legend:
@@ -56,27 +55,6 @@ class ModelFunctions:
         
         return dataset
 
-
-    def prepare_dataset(self, target_data, feature_data, split_index):
-        """Slices the target and feature data to create training and testing data for both the target and feature data
-        Args:
-        target_data (array of float) - contains the target data used for training
-        feature_data (numpy array) - contains the features data
-        split_index (int) - the number of data contained in the training data
-
-        Returns:
-        test_feature (array of float) - contains the first split_index target data
-        train_feature (numpy array) - contains the first split_index target data
-        test_target (array of float) - contains the final split_index target data
-        test_feature (numpy array) - contains the final split_index target data
-        """
-        train_target = target_data[:split_index]
-        train_feature = feature_data[:split_index]
-        test_target = target_data[split_index:]
-        test_feature = feature_data[split_index:]
-
-        return (train_target, train_feature, test_target, test_feature)
-    
     def create_model(self, window_size):
         """Generates the model using recurrenct neural network
         Args:

@@ -12,14 +12,16 @@ processdata_functions = ProcessDataFunctions('./')
 epochs = 5
 window_size = 7
 batch_size = 16
-split_index = 110
+split_index = 115
 learning_rate = 4e-4
 shuffle_buffer_size = 1000
 
 # Load the data
-# _ = scrapedata_functions.scrape_data()
-data = processdata_functions.clean_data()
-scaled_data, store_scalers = processdata_functions.scale_data(data)
+_ = scrapedata_functions.scrape_data()
+data = processdata_functions.load_scraped_data()
+clean_data = processdata_functions.clean_data(data)
+fixed_data = processdata_functions.fix_global_anomalies(clean_data)
+scaled_data, store_scalers = processdata_functions.scale_data(fixed_data)
 
 # Develop models for all fish types
 fish_types = ['Ikan Bandeng', 'Ikan Tongkol', 'Ikan Kembung']

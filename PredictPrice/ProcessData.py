@@ -10,31 +10,28 @@ class ProcessDataFunctions:
         self.folder_path = folder_path
 
     def load_scraped_data(self):
-        """Combines all raw scraped data and retrieve the necessary information from the data
-        Args:
-        folder_path - the path to the folder that contains all raw scraped data
-
+        """Combines all raw scraped datas, then retrieve the necessary information from the data
         Returns:
-        data - contains all the necessary data used for the model
+        data (pandas dataframe) - dataframe that contains all the necessary data used for the model
         """
         csv_files = glob.glob(self.folder_path + "*.csv")
-        data = pd.read_csv(csv_files[0]).drop(columns=['Unnamed: 0']).set_index('Komoditas (Rp)').transpose()
-        data['Provinsi'] = [csv_files[0][16:-4] for _ in range(len(data))]
-        for file in csv_files[1:]:
-            data_temp = pd.read_csv(file).drop(columns=['Unnamed: 0']).set_index('Komoditas (Rp)').transpose()
-            data_temp['Provinsi'] = [file[16:-4] for _ in range(len(data_temp))]
-            data = pd.concat([data, data_temp])
-        data = data.loc[:, ['Ikan Kembung', 'Ikan Tongkol', 'Ikan Bandeng', 'Provinsi']]
-        data = data.reset_index().rename(columns={'index':'Date'})
+        data = pd.DataFrame()
+        for file in csv_files:
+            temp_data = pd.read_csv(file).set_index('Komoditas (Rp)').transpose()
+            temp_data['Provinsi'] = [file[16:-4] for _ in range(len(temp_data))]
+            data = pd.concat([data, temp_data])
+        data = data.loc[:, ['Ikan Kembung', 'Ikan Tongkol', 'Ikan Bandeng', 'Provinsi']].reset_index().rename(columns={'index':'Date'})
 
         return data
 
-    def clean_data(self):
-        """Drop rows from the data that contains any missing values, reformat the date column
+    def clean_data(self, data):
+        """Drop any missing values rows in the data and reformat the date column
+        Args:
+        data (pandas dataframe) - dataframe that contains all the necessary data used for the model
+        
         Returns:
-        data - dataset that clear from any missing values and reformated date column
+        data (pandas dataframe) - dataframe that are clear from both missing and wrong format date values
         """
-        data = self.load_scraped_data()
         columns = ['Ikan Kembung', 'Ikan Tongkol', 'Ikan Bandeng']
         for col in columns:
             data[col] = data[col].apply(lambda row: np.nan if row == '-' else float(row))
@@ -43,13 +40,13 @@ class ProcessDataFunctions:
 
         return data
 
-    def calc_probability(self, data):
-        """Calculates the probabilites that data is in the normal distribution
+    def _calc_probability(self, data):
+        """Calculates the probability of a value coming from a normal distribution
         Args:
-        data - dataset containing all informations for a province
+        data (pandas dataframe) - localized dataframe
 
         Returns:
-        probability - dataset containing the probability of the data in the normal distribution
+        probability (pandas dataframe) - dataframe that contains the probability of the value coming from a normal distribution
         """
         probability = data.copy()
         for col in data.columns[1:-1]:
@@ -59,29 +56,29 @@ class ProcessDataFunctions:
             
         return probability
 
-    def find_anomalies(self, data):
-        """Checks each data entry that has the probability lower than 0.15
+    def _find_anomalies(self, probability):
+        """Check each value that has the probability lower than 0.15
         Args:
-        data - dataset containing all informations for a province
+        probability (pandas dataframe) - dataframe that contains the probability of the value coming from a normal distribution
 
         Returns:
-        check_anomaly - dataset containing booleans
+        check_anomaly (pandas dataframe) - dataframe that contains booleans on whether the probability of the value appearing in the normal distributionis lower than 0.15
         """
-        check_anomaly = self.calc_probability(data)
+        check_anomaly = probability.copy()
         for col in check_anomaly.columns[1:-1]:
             check_anomaly[col] = check_anomaly[col].apply(lambda x: x < 0.15)
 
         return check_anomaly
     
-    def fix_anomalies(self, data):
-        """Fixes anomalies by find the mean price in the previous 7 days
+    def _fix_local_anomalies(self, data, check_anomaly):
+        """Fixes anomalies by substitute it with the mean price in the previous 7 days
         Args:
-        data - dataset containing all informations for a province
+        data (pandas dataframe) - localized dataframe
+        check_anomaly (pandas dataframe) - dataframe that contains booleans on whether the probability of the value appearing in the normal distributionis lower than 0.15
 
         Returns:
-        fixed_data - dataset containing all information for a province that has been clear from any anomalies
+        fixed_data (pandas dataframe) - localized dataframe that is clear from any anomalies
         """
-        check_anomaly = self.find_anomalies(data)
         fixed_data = data.copy()
         for col in check_anomaly.columns[1:-1]:
             fixed_data_vals = fixed_data[col].values
@@ -99,37 +96,37 @@ class ProcessDataFunctions:
             
         return fixed_data
 
-    def fix_all_provinces_anomalies(self, data):
-        """Fix all data anomalies present in all provinces
+    def fix_global_anomalies(self, clean_data):
+        """Fixes all anomalies within the dataframe
         Args:
-        data - dataset that clear from any missing values and reformated date column
+        clean_data (pandas dataframe) - dataframe that are clear from both missing and wrong format date values
 
         Returns:
-        fixed_data - dataset that has been clear from any anomalies
+        fixed_data (pandas dataframe) - dataframe that is clear from any anomalies
         """
-        fixed_data = pd.DataFrame({'Date':[], 'Ikan Kembung':[], 'Ikan Tongkol':[], 'Ikan Bandeng': [], 'Provinsi':[]})
-        for province in data['Provinsi'].unique():
-            data_province = data.loc[data['Provinsi'] == province]
-            fixed_data_province = self.fix_anomalies(data_province)
+        fixed_data = pd.DataFrame()
+        for province in clean_data['Provinsi'].unique():
+            data_province = clean_data.loc[clean_data['Provinsi'] == province]
+            probability = self._calc_probability(data_province)
+            check_anomaly = self._find_anomalies(probability)
+            fixed_data_province = self._fix_local_anomalies(data_province, check_anomaly)
             fixed_data = pd.concat([fixed_data, fixed_data_province])
 
         return fixed_data
     
-    def scale_data(self, data):
-        """Scales the data into having the mean of 0 and variance of 1
+    def scale_data(self, fixed_data):
+        """Scales the dataframe into having the mean of 0 and variance of 1
         Args:
-        data - dataset that has been clear from any anomalies
+        fixed_data (pandas dataframe) - dataframe that is clear from any anomalies
 
         Returns:
-        scaled_data - dataset that has been scaled into having the mean of 0 and variance of 1
-        store_scalers - contains the scaler used to revert the scaled data
+        scaled_data (pandas dataframe) - dataframe that has been scaled into having the mean of 0 and variance of 1
+        store_scalers (dict) - store the scaler used to revert the scaled data
         """
-        fixed_data = self.fix_all_provinces_anomalies(data)
-        provinces = data['Provinsi'].unique()
-        fish_types = data.columns[1:-1]
+        provinces = fixed_data['Provinsi'].unique()
+        fish_types = fixed_data.columns[1:-1]
         store_scalers = {fish_type:{province:StandardScaler() for province in provinces} for fish_type in fish_types}
         temp_dict = {'Date':fixed_data['Date'].values}
-
         for fish_type in fish_types:
             temp_list = np.array([])
             scalers = store_scalers[fish_type]
@@ -139,7 +136,6 @@ class ProcessDataFunctions:
                 fish_price_scaled = scaler.transform(fish_price).T[0]
                 temp_list = np.concatenate([temp_list, fish_price_scaled])
             temp_dict[fish_type] = temp_list
-        
         temp_dict['Provinsi'] = fixed_data['Provinsi'].values
         scaled_data = pd.DataFrame(temp_dict)
 
@@ -155,20 +151,18 @@ class ProcessDataFunctions:
         Returns:
         train_target (array of float)  - contains the first split_index target data
         train_feature (numpy array) - contains the first split_index target data
-        test_target (array of float) - contains the final split_index target data
-        test_feature (numpy array) - contains the final split_index target data
+        test_target (array of float) - contain the final remainder of the target data that didn't make it into the train_target
+        test_feature (numpy array) - contain the final remainder of the feature data that didn't make it into the train_feature
         """
-        # Get the train set 
         train_target = target_data[:split_index]
         train_feature = feature_data[:split_index]
-        # Get the validation set
         test_target = target_data[split_index:]
         test_feature = feature_data[split_index:]
 
         return (train_target, train_feature, test_target, test_feature)
     
     def prepare_dataset(self, scaled_data, split_index, fish_type):
-        """Prepares a train and test dataset for both the target and feature data
+        """Prepare the train and test dataset for both the target and feature data
         Args:
         scaled_data (pandas dataframe) - dataset that has been scaled into having the mean of 0 and variance of 1
         split_index (int) - the number of data contained in the training data
