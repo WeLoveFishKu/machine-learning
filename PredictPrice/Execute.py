@@ -1,21 +1,24 @@
-import numpy as np
 import pandas as pd
 
 from Model import ModelFunctions
+from ScrapeData import ScrapeDataFunctions
 from ProcessData import ProcessDataFunctions
 
 model_functions = ModelFunctions()
-processdata_functions = ProcessDataFunctions()
+scrapedata_functions = ScrapeDataFunctions(2, 1, 2023)
+processdata_functions = ProcessDataFunctions('./')
 
 # Parameters
 epochs = 5
 window_size = 7
 batch_size = 16
-split_index = 100
+split_index = 110
 learning_rate = 4e-4
 shuffle_buffer_size = 1000
 
-data = pd.read_csv('FishPrice.csv', parse_dates=['Date']).drop(columns='Unnamed: 0')
+# Load the data
+# _ = scrapedata_functions.scrape_data()
+data = processdata_functions.clean_data()
 scaled_data, store_scalers = processdata_functions.scale_data(data)
 
 # Develop models for all fish types

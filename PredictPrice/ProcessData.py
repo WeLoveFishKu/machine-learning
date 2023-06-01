@@ -6,10 +6,10 @@ from datetime import datetime
 from sklearn.preprocessing import StandardScaler
 
 class ProcessDataFunctions:
-    def __init__(self):
-        pass
+    def __init__(self, folder_path):
+        self.folder_path = folder_path
 
-    def load_scraped_data(self, folder_path):
+    def load_scraped_data(self):
         """Combines all raw scraped data and retrieve the necessary information from the data
         Args:
         folder_path - the path to the folder that contains all raw scraped data
@@ -17,12 +17,12 @@ class ProcessDataFunctions:
         Returns:
         data - contains all the necessary data used for the model
         """
-        csv_files = glob.glob(folder_path + "/*.csv")
+        csv_files = glob.glob(self.folder_path + "*.csv")
         data = pd.read_csv(csv_files[0]).drop(columns=['Unnamed: 0']).set_index('Komoditas (Rp)').transpose()
-        data['Provinsi'] = [csv_files[0][28:-4] for _ in range(len(data))]
+        data['Provinsi'] = [csv_files[0][16:-4] for _ in range(len(data))]
         for file in csv_files[1:]:
             data_temp = pd.read_csv(file).drop(columns=['Unnamed: 0']).set_index('Komoditas (Rp)').transpose()
-            data_temp['Provinsi'] = [file[28:-4] for _ in range(len(data_temp))]
+            data_temp['Provinsi'] = [file[16:-4] for _ in range(len(data_temp))]
             data = pd.concat([data, data_temp])
         data = data.loc[:, ['Ikan Kembung', 'Ikan Tongkol', 'Ikan Bandeng', 'Provinsi']]
         data = data.reset_index().rename(columns={'index':'Date'})
@@ -148,15 +148,15 @@ class ProcessDataFunctions:
     def slice_dataset(self, target_data, feature_data, split_index):
         """Slices the target and feature data to create training and testing data for both the target and feature data
         Args:
-        target_data - contains the target data used for training
-        feature_data - contains the features data
-        split_index - the number of data contained in the training data
+        target_data (array of float) - contains the target data used for training
+        feature_data (numpy array) - contains the features data
+        split_index (int) - the number of data contained in the training data
 
         Returns:
-        test_feature - contains the first split_index target data
-        train_feature - contains the first split_index target data
-        test_target - contains the final split_index target data
-        test_feature - contains the final split_index target data
+        train_target (array of float)  - contains the first split_index target data
+        train_feature (numpy array) - contains the first split_index target data
+        test_target (array of float) - contains the final split_index target data
+        test_feature (numpy array) - contains the final split_index target data
         """
         # Get the train set 
         train_target = target_data[:split_index]
@@ -168,16 +168,28 @@ class ProcessDataFunctions:
         return (train_target, train_feature, test_target, test_feature)
     
     def prepare_dataset(self, scaled_data, split_index, fish_type):
+        """Prepares a train and test dataset for both the target and feature data
+        Args:
+        scaled_data (pandas dataframe) - dataset that has been scaled into having the mean of 0 and variance of 1
+        split_index (int) - the number of data contained in the training data
+        fish_type (str) - the type of fish that will be aggregated from the scaled_data
+
+        Returns:
+        train_target (array of float) - contain the first split_index's amount of target data
+        train_feature (numpy array) - contain the first split_index's amount of feature data
+        test_target (array of float) - contain the final remainder of the target data that didn't make it into the train_target
+        test_feature (numpy array) - contain the final remainder of the feature data that didn't make it into the train_feature
+        """
         provinces = scaled_data['Provinsi'].unique()
-        train_price, train_date, test_price, test_date = np.array([]), np.array([], dtype='datetime64'), np.array([]), np.array([], dtype='datetime64')
+        train_target, train_feature, test_target, test_feature = np.array([]), np.array([], dtype='datetime64'), np.array([]), np.array([], dtype='datetime64')
         for province in provinces:
             data_provinsi = scaled_data.loc[scaled_data['Provinsi'] == province, ['Date', fish_type]]
             price_data = data_provinsi[fish_type].values
             date_data = data_provinsi['Date'].values
-            temp_train_price, temp_train_date, temp_test_price, temp_test_date = self.slice_dataset(price_data, date_data, split_index)
-            train_price = np.concatenate((train_price, temp_train_price))
-            train_date = np.concatenate((train_date, temp_train_date))
-            test_price = np.concatenate((test_price, temp_test_price))
-            test_date = np.concatenate((test_date, temp_test_date))
+            temp_train_target, temp_train_feature, temp_test_target, temp_test_feature = self.slice_dataset(price_data, date_data, split_index)
+            train_target = np.concatenate((train_target, temp_train_target))
+            train_feature = np.concatenate((train_feature, temp_train_feature))
+            test_target = np.concatenate((test_target, temp_test_target))
+            test_feature = np.concatenate((test_feature, temp_test_feature))
         
-        return (train_price, train_date, test_price, test_date)
+        return (train_target, train_feature, test_target, test_feature)

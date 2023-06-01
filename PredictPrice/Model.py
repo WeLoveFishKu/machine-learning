@@ -19,20 +19,19 @@ class ModelFunctions:
         ylabel (string) - label for the y-axis
         legend (list of strings) - legend for the plot
         """
-        plt.figure(figsize=(10, 6)) # Setup dimensions of the graph figure
-        if type(y) is tuple: # Check if there are more than two series to plot
-            for y_curr in y: # Loop over the y elements
-                plt.plot(x[start:end], y_curr[start:end], format) # Plot the x and current y values
+        plt.figure(figsize=(10, 6))
+        if type(y) is tuple:
+            for y_curr in y:
+                plt.plot(x[start:end], y_curr[start:end], format)
             else:
-                plt.plot(x[start:end], y[start:end], format) # Plot the x and y values
-        # Give labels
+                plt.plot(x[start:end], y[start:end], format)
+
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        # Set the legend
         if legend:
             plt.legend(legend)
-        plt.title(title) # Set the title
-        plt.grid(True) # Overlay a grid on the graph
+        plt.title(title)
+        plt.grid(True)
         plt.show()
 
         return
@@ -48,12 +47,12 @@ class ModelFunctions:
         Returns:
         dataset (TF Dataset) - TF Dataset containing time windows
         """
-        dataset = tf.data.Dataset.from_tensor_slices(series) # Generate a TF Dataset from the series values
-        dataset = dataset.window(window_size + 1, shift=1, drop_remainder=True) # Window the data but only take those with the specified size
-        dataset = dataset.flat_map(lambda window: window.batch(window_size + 1)) # Flatten the windows by putting its elements in a single batch
-        dataset = dataset.map(lambda window: (window[:-1], window[-1])) # Create tuples with features and labels 
-        dataset = dataset.shuffle(shuffle_buffer) # Shuffle the windows
-        dataset = dataset.batch(batch_size).prefetch(1) # Create batches of windows
+        dataset = tf.data.Dataset.from_tensor_slices(series)
+        dataset = dataset.window(window_size + 1, shift=1, drop_remainder=True)
+        dataset = dataset.flat_map(lambda window: window.batch(window_size + 1))
+        dataset = dataset.map(lambda window: (window[:-1], window[-1]))
+        dataset = dataset.shuffle(shuffle_buffer)
+        dataset = dataset.batch(batch_size).prefetch(1)
         
         return dataset
 
@@ -61,20 +60,18 @@ class ModelFunctions:
     def prepare_dataset(self, target_data, feature_data, split_index):
         """Slices the target and feature data to create training and testing data for both the target and feature data
         Args:
-        target_data - contains the target data used for training
-        feature_data - contains the features data
-        split_index - the number of data contained in the training data
+        target_data (array of float) - contains the target data used for training
+        feature_data (numpy array) - contains the features data
+        split_index (int) - the number of data contained in the training data
 
         Returns:
-        test_feature - contains the first split_index target data
-        train_feature - contains the first split_index target data
-        test_target - contains the final split_index target data
-        test_feature - contains the final split_index target data
+        test_feature (array of float) - contains the first split_index target data
+        train_feature (numpy array) - contains the first split_index target data
+        test_target (array of float) - contains the final split_index target data
+        test_feature (numpy array) - contains the final split_index target data
         """
-        # Get the train set 
         train_target = target_data[:split_index]
         train_feature = feature_data[:split_index]
-        # Get the validation set
         test_target = target_data[split_index:]
         test_feature = feature_data[split_index:]
 
@@ -83,12 +80,11 @@ class ModelFunctions:
     def create_model(self, window_size):
         """Generates the model using recurrenct neural network
         Args:
-        window_size - the number of data contained within a list used for fitting
+        window_size (int) - the number of data contained within a list used for fitting
 
         Returns:
-        model - the generated reccurrent neural network
+        model (TF Keras Model) - the generated reccurrent neural network
         """
-        # Build the Model
         model = tf.keras.models.Sequential([
                 tf.keras.layers.Lambda(lambda x: tf.expand_dims(x, axis=-1),
                                     input_shape=[window_size]),
@@ -97,57 +93,66 @@ class ModelFunctions:
                 tf.keras.layers.Dense(8),
                 tf.keras.layers.Dense(1)
                 ])
-        model.summary() # Print the model summary 
+        model.summary()
 
         return model
     
     def find_best_learningrate(self, model, train_target):
         """Used to find the best learningrate for the generated recurrenct neural network
         Args:
-        model - the generated reccurrent neural network
-        train_target - contains the data used for training the model
+        model (TF Keras Model) - the generated reccurrent neural network
+        train_target (array of float) - contains the data used for training the model
         """
-        init_weights = model.get_weights() # Get initial weights
-        # Set the learning rate scheduler
+        init_weights = model.get_weights()
         lr_schedule = tf.keras.callbacks.LearningRateScheduler(
             lambda epoch: 1e-8 * 10**(epoch / 20))
-        optimizer = tf.keras.optimizers.SGD(momentum=0.9) # Initialize the optimizer
-        model.compile(loss=tf.keras.losses.Huber(), optimizer=optimizer) # Set the training parameters
-        history = model.fit(train_target, epochs=100, callbacks=[lr_schedule]) # Train the model
-        lrs = 1e-8 * (10 ** (np.arange(100) / 20)) # Define the learning rate array
-        plt.figure(figsize=(10, 6)) # Set the figure size
-        plt.grid(True) # Set the grid
-        plt.semilogx(lrs, history.history["loss"]) # Plot the loss in log scale
-        plt.tick_params('both', length=10, width=1, which='both') # Increase the tickmarks size
-        # Set the plot boundaries
+        optimizer = tf.keras.optimizers.SGD(momentum=0.9)
+        model.compile(loss=tf.keras.losses.Huber(), optimizer=optimizer)
+        history = model.fit(train_target, epochs=100, callbacks=[lr_schedule])
+        lrs = 1e-8 * (10 ** (np.arange(100) / 20))
+        plt.figure(figsize=(10, 6))
+        plt.grid(True)
+        plt.semilogx(lrs, history.history["loss"])
+        plt.tick_params('both', length=10, width=1, which='both')
         plt.axis([1e-8, 1e-3, 0, 100])
         plt.show()
-        tf.keras.backend.clear_session() # Reset states generated by Keras
-        model.set_weights(init_weights) # Reset the weights
+        tf.keras.backend.clear_session()
+        model.set_weights(init_weights)
 
         return 
 
     def model_fitting(self, model, learning_rate, epochs, train_target):
         """Fits the model using the training data
         Args:
-        model - the generated reccurrent neural network
-        learning_rate - the learning rate used for fitting the model
-        epochs - the number of epoch used to train the model
-        train_target - contains the data used for training the model
+        model (TF Keras Model) - the generated reccurrent neural network
+        learning_rate (float) - the learning rate used for fitting the model
+        epochs (int) - the number of epoch used to train the model
+        train_target (array of float) - contains the data used for training the model
 
         Returns:
-        model - the fitted model
+        model (TF Keras Model) - the fitted model
         """
-        optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9) # Set the optimizer 
-        # Set the training parameters
+        optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
         model.compile(loss=tf.keras.losses.Huber(),
                     optimizer=optimizer,
                     metrics=["mae"])
-        _ = model.fit(train_target,epochs=epochs) # Train the model
+        _ = model.fit(train_target,epochs=epochs)
 
         return model
 
     def develop_model(self, train_traget, window_size, batch_size, shuffle_buffer_size, learning_rate, epochs):
+        """Create and fit the model using training data
+        Args:
+        train_traget (array of float) - contains the data used for training the model
+        window_size (int) - the number of data contained within a list used for fitting
+        batch_size (int) - the batch size
+        shuffle_buffer (int) - buffer size to use for the shuffle method
+        learning_rate (float) - the learning rate used for fitting the model
+        epochs (int) - the number of epoch used to train the model
+
+        Returns:
+        model (TF Keras Model) - the fitted model
+        """
         train_dataset = self.windowed_dataset(train_traget, window_size, batch_size, shuffle_buffer_size)
         model = self.create_model(window_size)
         model = self.model_fitting(model, learning_rate, epochs, train_dataset)
@@ -165,11 +170,11 @@ class ModelFunctions:
         Returns:
         forecast (numpy array) - array containing predictions
         """
-        dataset = tf.data.Dataset.from_tensor_slices(series) # Generate a TF Dataset from the series values
-        dataset = dataset.window(window_size, shift=1, drop_remainder=True) # Window the data but only take those with the specified size
-        dataset = dataset.flat_map(lambda w: w.batch(window_size)) # Flatten the windows by putting its elements in a single batch
-        dataset = dataset.batch(batch_size).prefetch(1) # Create batches of windows
-        forecast = model.predict(dataset) # Get predictions on the entire dataset
+        dataset = tf.data.Dataset.from_tensor_slices(series)
+        dataset = dataset.window(window_size, shift=1, drop_remainder=True)
+        dataset = dataset.flat_map(lambda w: w.batch(window_size))
+        dataset = dataset.batch(batch_size).prefetch(1)
+        forecast = model.predict(dataset)
         forecast = scaler.inverse_transform(forecast)
         
         return forecast
