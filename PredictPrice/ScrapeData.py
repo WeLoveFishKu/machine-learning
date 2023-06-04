@@ -48,6 +48,7 @@ class ScrapeDataFunctions:
         _ = driver.find_element(By.CLASS_NAME, 'datepicker-nav-month').click()
         _ = driver.find_element(By.XPATH, f"//div[@data-month='{self.today_date_month}']").click()
         _ = driver.find_element(By.XPATH, f"//div[@data-date='{self.today_date_word} 00:00:00 GMT+0700 (Western Indonesia Time)']").click()
+        store_df = {}
         for i in range(1, 35):
             while True:
                 try:
@@ -58,10 +59,10 @@ class ScrapeDataFunctions:
                     WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.CSS_SELECTOR, "table")))
                     table_html = WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CSS_SELECTOR, "table"))).get_attribute("outerHTML")
                     df = pd.read_html(table_html)[0]
-                    df.to_csv(f'./DataHargaIkan_{province}.csv', index=False)
+                    store_df[province] = df
                     break
                 except:
                     time.sleep(10)
         driver.quit()
 
-        return
+        return store_df

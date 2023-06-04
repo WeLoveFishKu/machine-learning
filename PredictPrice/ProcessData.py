@@ -1,4 +1,3 @@
-import glob 
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
@@ -6,20 +5,20 @@ from datetime import datetime
 from sklearn.preprocessing import StandardScaler
 
 class ProcessDataFunctions:
-    def __init__(self, folder_path):
-        self.folder_path = folder_path
+    def __init__(self):
+        pass
 
-    def load_scraped_data(self):
+    def load_scraped_data(self, store_df):
         """Combines all raw scraped datas, then retrieve the necessary information from the data
         Returns:
         data (pandas dataframe) - dataframe that contains all the necessary data used for the model
         """
-        csv_files = glob.glob(self.folder_path + "*.csv")
+        provinces = store_df.keys()
         data = pd.DataFrame()
-        for file in csv_files:
-            temp_data = pd.read_csv(file).set_index('Komoditas (Rp)').transpose()
-            temp_data['Provinsi'] = [file[16:-4] for _ in range(len(temp_data))]
-            data = pd.concat([data, temp_data])
+        for province in provinces:
+            file = store_df[province].set_index('Komoditas (Rp)').transpose()
+            file['Provinsi'] = [province for _ in range(len(file))]
+            data = pd.concat([data, file])
         data = data.loc[:, ['Ikan Kembung', 'Ikan Tongkol', 'Ikan Bandeng', 'Provinsi']].reset_index().rename(columns={'index':'Date'})
 
         return data
