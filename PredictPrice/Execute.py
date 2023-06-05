@@ -1,8 +1,12 @@
+import os
 import time
 import schedule
 import pandas as pd
+from flask import Flask
 from datetime import date
-from keras.models import load_model
+from json import loads, dumps
+from tensorflow.keras.models import load_model
+
 
 from Model import ModelFunctions
 from ScrapeData import ScrapeDataFunctions
@@ -12,6 +16,9 @@ model_functions = ModelFunctions()
 processdata_functions = ProcessDataFunctions()
 scrapedata_functions = ScrapeDataFunctions(1, 1, 2023)
 
+app = Flask(__name__)
+
+@app.route('/predict', methods=['GET'])
 def execute(t, model_bandeng=None, model_kembung=None, model_tongkol=None):
     # Load the data
     store_df = scrapedata_functions.scrape_data()
@@ -58,14 +65,16 @@ def execute(t, model_bandeng=None, model_kembung=None, model_tongkol=None):
             store_forecasts.append(forecast[0][0])
         forecast_dict[fish_type] = store_forecasts
     forecast_dataset = pd.DataFrame(forecast_dict)
-    forecast_dataset.to_csv(f'FishPriceForecast_{date.today()}.csv', index=False)
+    df_json = forecast_dataset.to_json(orient="split"), t
 
-    return forecast_dataset
+    return df_json
 
-schedule.every().day.at("10:38").do(execute, 'Program is currently running', 'model_PredictPriceIkanBandeng.h5', 
+try:
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    schedule.every().day.at("20:15").do(execute, 'Program is currently running', 'model_PredictPriceIkanBandeng.h5', 
                                                                             'model_PredictPriceIkanKembung.h5', 
                                                                             'model_PredictPriceIkanTongkol.h5')
-
-while True:
+except:
     schedule.run_pending()
     time.sleep(60)

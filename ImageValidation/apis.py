@@ -1,7 +1,8 @@
+import os 
+import numpy as np
 from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
-import numpy as np
 
 app = Flask(__name__)
 model = load_model('modelValidateFishImage.h5')
@@ -23,4 +24,4 @@ def validate_image():
     return jsonify({'prediction': label})
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
