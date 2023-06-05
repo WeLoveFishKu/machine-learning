@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "fisku-36c86",
+  "private_key_id": "20a9ac06ba70d1471286ed4b44625166b1f0424a",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj4oo2K3i7qc60\nZ/ri82W8mFl8TdhrMgJcpd3/LeLPRuxCZSrTsnULa13zEr1A7jNdWdWmS1AQmldX\nlefT9TC6feWPsQ2gsKvHdrmbN9OQWpKSL5FztUqPm/IG5fBKwTVrQYqQKjoR7pG2\norLQ8ig7Exqlj1WlBeegewdoJOP2sa9YTuJhDfUxyjXiG0VEeLymPMt3EZz0oYNu\nmBcsoHf+3L9ssK7QYgJEPx5wepEhla4rVKf0eESduORti15Gqqhi2WX+F9Xd5YYU\nHIhpuIU2b2kPLLFTZ4akL08ySzMbZJMU58+XQaMZoXg5PncQK5jXQX5mF1jDFCrb\nM7D9uWpRAgMBAAECggEAEOFHT5uMKLYtjH7uRDyCNNnzU56YBTiGLkFGW5+ADk31\njUQq1Fm7/QRezafXNu4h+8JCQ4nb0g33o5WU5ovJbFgF0lZP+0ZfNyEHLpHiOGrf\n0G9WWbbpWl/bXrMF3ElIxYafbUhwKUMrnoZlCSj8FFOcKcPY9DGmwSyS33r3QQQz\ngE+r3s1AYsaJQwuGWGlk3ujY5GPCxJOGnADJYnS9I4y+5Kp40TCgVmyMv+q09IWv\nzJffvQklWJnqKx/g4Irjc1+ooD8eJR5vydfXdxeQCTgTyouTTp+NpPie+faDeBUV\nsYfF4QBAI0KvGTnsyZE3GrGRkG3sZmoSx1l7xJSLnQKBgQDSBJITKpU61blAz81b\nmWF+WIPqvtY7U5xb2zzRA5k6oyK88WT0dW/GnxB4iDZQ13EfDPPMb2tE25awBUaq\nlKPkLsmgjSgFfkIp/UuDf48PAwT01QWQK9+CqU40N3dYx8dg+87mMychT6ET45Sk\nIKYsTyCU3H+5RibZs/54G81gTQKBgQDHxDvs7+iNADm5iVHQTJotMpahSCsufnNF\nWGNKNYAyQ5BGoqXKM5oHa9g4knk3s1SgLJCmFmag8Ap0KCyU9eklysxGbRGXAPdH\n3V/2x+VmvGUYxuouUPDRvRI9FIpu/LLPyxZ86qBbOCtnV/KLMTTT7UuO3pdRDBpC\nfSAc3QSUFQKBgFNxm3RgC/DXcAaPSgGl/HWNx8QiVM43lz1r60sEigIhRTEbHEiA\nzIt3Mb0iKaqPHxP+OnO0pUMzmDiRsBUgf8muyU+wJgGgu7shN7qkmPuW8IYyiUZS\nGDk6+aaHjzTIE7C1++u80URL9i0H1Ewt6LhcLA7ZWSoM9Gy1NlsUeNJVAoGBAMEC\nQEP0p+NTzHIO0xVGbdAtiIvbhp0tX4IonAYfGvV1gfg9PaHXqYJyGD7Qhn3irmjz\npe5SxmXIhtEj368syU7SWfvRdaVIMaMlqIpvKJ3SeHsv9SM64PJEk1KgfgAt9zX9\nKoUWzEhWRNlch+Mkb74zD0XCmsCbyONksZoxkTLhAoGAImefdP/ilIFoeM+DCrhR\nBiIQfofn2cr1x9fkGWnpPci50AktUgdRWaikLoW7PdzLgqf87IzvI8paegnavA6y\nNWYsQuP8aJf06scQrMggCxvJciCzjXDarv85ku2mRz0nxndr3JX26UmgmsrUoT7x\n9cTqEe/e86NuF+Okg4glvOM=\n-----END PRIVATE KEY-----\n",
+  "client_email": "fishku-gcp-storage@fisku-36c86.iam.gserviceaccount.com",
+  "client_id": "104940078651069530713",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/fishku-gcp-storage%40fisku-36c86.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
