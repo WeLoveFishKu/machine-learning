@@ -1,10 +1,6 @@
-import os
-import time
-import schedule
 import pandas as pd
-from flask import Flask
 from datetime import date
-from json import loads, dumps
+from json import dump
 from tensorflow.keras.models import load_model
 
 
@@ -16,16 +12,17 @@ model_functions = ModelFunctions()
 processdata_functions = ProcessDataFunctions()
 scrapedata_functions = ScrapeDataFunctions(1, 1, 2023)
 
-app = Flask(__name__)
 
-@app.route('/predict', methods=['GET'])
-def execute(t, model_bandeng=None, model_kembung=None, model_tongkol=None):
+def execute(model_bandeng=None, model_kembung=None, model_tongkol=None):
     # Load the data
     store_df = scrapedata_functions.scrape_data()
     data = processdata_functions.load_scraped_data(store_df)
     clean_data = processdata_functions.clean_data(data)
     fixed_data = processdata_functions.fix_global_anomalies(clean_data)
+    fixed_data.to_csv(f'FishPrice_{date.today()}.csv', index=False)
     scaled_data, store_scalers = processdata_functions.scale_data(fixed_data)
+
+
 
     # Parameters
     epochs = 1250
@@ -65,16 +62,11 @@ def execute(t, model_bandeng=None, model_kembung=None, model_tongkol=None):
             store_forecasts.append(forecast[0][0])
         forecast_dict[fish_type] = store_forecasts
     forecast_dataset = pd.DataFrame(forecast_dict)
-    df_json = forecast_dataset.to_json(orient="split"), t
+    forecast_dataset.to_csv(f'FishPriceForecast_{date.today()}.csv', index=False)
+    df_json = forecast_dataset.to_json(orient="table")
+    with open(f'FishPriceForecast_{date.today()}.json', 'w') as f:
+        dump(df_json, f)
 
-    return df_json
+    return 
 
-try:
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-    schedule.every().day.at("20:15").do(execute, 'Program is currently running', 'model_PredictPriceIkanBandeng.h5', 
-                                                                            'model_PredictPriceIkanKembung.h5', 
-                                                                            'model_PredictPriceIkanTongkol.h5')
-except:
-    schedule.run_pending()
-    time.sleep(60)
+execute('model_PredictPriceIkanBandeng.h5', 'model_PredictPriceIkanKembung.h5', 'model_PredictPriceIkanTongkol.h5')
